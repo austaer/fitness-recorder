@@ -226,7 +226,7 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
         Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
-
+        App\Providers\RepositoryServiceProvider::class,
     ],
 
 ];
