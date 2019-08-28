@@ -11,6 +11,6 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', 'FoodController@list');
+
+Route::get('/food/list', 'FoodController@list');
