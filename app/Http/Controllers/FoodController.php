@@ -17,6 +17,10 @@ class FoodController extends Controller
 
     public function list()
     {
-        return $this->foodRepository->findAll();
+        return view('food-list', ['foodList' => $this->foodRepository->findAll(), 'info' => [
+            'NAME' => '樣品名稱',
+            'SEQ' => '整合編號',
+            'KCAL' => '熱量(kcal)',
+        ]]);
     }
 }
