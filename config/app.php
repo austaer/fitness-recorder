@@ -1,6 +1,6 @@
 <?php
 
-use App\Providers\RepositoryServiceProvider;
+use App\Providers\DependencyInjectionServiceProvider;
 
 return [
 
@@ -176,7 +176,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\RepositoryServiceProvider::class,
+        App\Providers\DependencyInjectionServiceProvider::class,
 
     ],
 
