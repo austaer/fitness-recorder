@@ -4,55 +4,41 @@
 namespace App\Http\Services;
 
 
+use App\Helper\Line\EventExecutor;
+use App\Helper\Line\Events\AbstractEventHelper;
 use App\Http\Services\Interfaces\LineServiceInterface;
-use Carbon\Carbon;
 use Config;
 use LINE\LINEBot;
-use LINE\LINEBot\HTTPClient\CurlHTTPClient;
+use LINE\LINEBot\Event\BaseEvent;
+use LINE\LINEBot\Exception\InvalidEventRequestException;
+use LINE\LINEBot\Exception\InvalidSignatureException;
 use Log;
 
 class LineService implements LineServiceInterface
 {
-
-    public function createBot(): LINEBot
+    public function parseEvent(LINEBot $bot, string $content, string $signature)
     {
-        $accessTokenExpireTime = config('services.line.access_token_expire_time');
-        $accessToken = config('services.line.access_token');
-        $channelSecret = config('services.line.channel_secret');
-        $channelId = config('services.line.channel_id');
-        if (Carbon::parse($accessTokenExpireTime)->lessThanOrEqualTo(Carbon::now())) {
-            $this->revokeAccessToken($accessToken);
-            $accessToken = $this->createAccessToken($accessToken, $channelSecret, $channelId);
+        try {
+            return $bot->parseEventRequest($content, $signature);
+        } catch (InvalidSignatureException $e) {
+            return response('Invalid signature', 400);
+        } catch (InvalidEventRequestException $e) {
+            return response('Invalid event request', 400);
         }
-
-        $httpClient = new CurlHTTPClient($accessToken);
-        return new LINEBot($httpClient, ['channelSecret' => $channelSecret]);
     }
 
-    private function createAccessToken(string $accessToken, string $channelSecret, string $channelId)
+    /**
+     * @param LINEBot $bot
+     * @param BaseEvent $event
+     */
+    public function delegateEvent(LINEBot $bot, BaseEvent $event)
     {
-        $httpClient = new CurlHTTPClient($accessToken);
-        $bot = new LINEBot($httpClient, ['channelSecret' => $channelSecret]);
-        $response = $bot->createChannelAccessToken($channelId);
-        if ($response->getHTTPStatus() == 200) {
-            $body = $response->getJSONDecodedBody();
-            Config::set('services.line.access_token_expire_time', Carbon::now()->addSeconds($body['expires_in'])->toDateTimeString());
-            Config::set('services.line.access_token', $accessToken = $body['access_token']);
-        } else {
-            Log::warning("http status: {$response->getHTTPStatus()}, body: {$response->getRawBody()}");
-            $accessToken = null;
-        }
-
-        return $accessToken;
-    }
-
-    private function revokeAccessToken(string $accessToken): void
-    {
-        $httpClient = new CurlHTTPClient($accessToken);
-        $bot = new LINEBot($httpClient, ['channelSecret' => config('services.line.channel_secret')]);
-        $response = $bot->revokeChannelAccessToken($accessToken);
-        if ($response->getHTTPStatus() != 200) {
-            Log::warning("http status: {$response->getHTTPStatus()}, body: {$response->getRawBody()}");
+        $eventType = "lineevents.event.{$event->getType()}";
+        if (Config::has($eventType)) {
+            /**@var  AbstractEventHelper $eventHelper **/
+            $className = (Config::get($eventType));
+            $eventHelper = new $className($bot, $event);
+            EventExecutor::execute($eventHelper);
         }
     }
 }

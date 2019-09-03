@@ -17,4 +17,4 @@ use Illuminate\Http\Request;
 //    return $request->user();
 //});
 
-Route::middleware('auth:api')->get('/reply', 'LineController@reply');
+Route::post('/reply', 'LineController@reply')->middleware('checkLineRequest');

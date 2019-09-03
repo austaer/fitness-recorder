@@ -11,6 +11,4 @@
 |
 */
 
-Route::get('/', 'FoodController@list');
-
 Route::get('/food/list', 'FoodController@list');
